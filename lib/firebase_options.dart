@@ -53,7 +53,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDfZOMOl7rJven8mLLST3EYCX0eg0eqNMc',
+    apiKey: '',
     appId: '1:551518726776:android:f669357332c8d9dbd15b8d',
     messagingSenderId: '551518726776',
     projectId: 'guardian-alert-sers',
