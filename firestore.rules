@@ -1,0 +1,216 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // User profiles
+    match /users/{userId} {
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.uid == userId
+                    && request.resource.data.name is string
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.keys().hasOnly([
+                      'uid',
+                      'name',
+                      'email',
+                      'createdAt'
+                    ]);
+
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.uid == userId
+                    && request.resource.data.name is string
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.keys().hasOnly([
+                      'uid',
+                      'name',
+                      'email',
+                      'createdAt'
+                    ]);
+
+      allow delete: if false;
+    }
+
+    // Emergency alerts
+    match /emergency_alerts/{alertId} {
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.userName is string
+                    && request.resource.data.alertType is string
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.createdAt == request.time;
+
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == resource.data.userId
+                    && (
+                      // Allow location updates without changing other fields.
+                      (
+                        request.resource.data.diff(resource.data)
+                          .affectedKeys()
+                          .hasOnly([
+                            'latitude',
+                            'longitude',
+                            'locationUpdatedAt'
+                          ])
+                        && request.resource.data.latitude is number
+                        && request.resource.data.longitude is number
+                        && request.resource.data.latitude >= -90
+                        && request.resource.data.latitude <= 90
+                        && request.resource.data.longitude >= -180
+                        && request.resource.data.longitude <= 180
+                        && request.resource.data.locationUpdatedAt == request.time
+                      )
+                      ||
+                      // Allow status changes only from pending.
+                      (
+                        request.resource.data.diff(resource.data)
+                          .affectedKeys()
+                          .hasOnly(['status', 'updatedAt'])
+                        && resource.data.status == 'pending'
+                        && request.resource.data.status in [
+                          'cancelled',
+                          'triggered'
+                        ]
+                        && request.resource.data.updatedAt == request.time
+                      )
+                    );
+
+      allow delete: if false;
+    }
+
+    // Nearby-user locations
+    match /user_locations/{userId} {
+      // Users can read only their own location document.
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+
+      // Create a location or consent document.
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.keys().hasOnly([
+                      'uid',
+                      'latitude',
+                      'longitude',
+                      'updatedAt',
+                      'nearbyAlertsEnabled',
+                      'consentUpdatedAt'
+                    ])
+                    && request.resource.data.uid == userId
+                    && (
+                      !request.resource.data.keys().hasAny(['latitude'])
+                      || (
+                        request.resource.data.latitude is number
+                        && request.resource.data.latitude >= -90
+                        && request.resource.data.latitude <= 90
+                      )
+                    )
+                    && (
+                      !request.resource.data.keys().hasAny(['longitude'])
+                      || (
+                        request.resource.data.longitude is number
+                        && request.resource.data.longitude >= -180
+                        && request.resource.data.longitude <= 180
+                      )
+                    )
+                    && (
+                      !request.resource.data.keys().hasAny(['updatedAt'])
+                      || request.resource.data.updatedAt == request.time
+                    )
+                    && (
+                      !request.resource.data.keys().hasAny(['consentUpdatedAt'])
+                      || request.resource.data.consentUpdatedAt == request.time
+                    )
+                    && (
+                      !request.resource.data.keys().hasAny(['nearbyAlertsEnabled'])
+                      || request.resource.data.nearbyAlertsEnabled is bool
+                    );
+
+      // Update a location or consent document.
+      // Existing timestamps may remain unchanged during merged updates.
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.keys().hasOnly([
+                      'uid',
+                      'latitude',
+                      'longitude',
+                      'updatedAt',
+                      'nearbyAlertsEnabled',
+                      'consentUpdatedAt'
+                    ])
+                    && request.resource.data.uid == userId
+                    && (
+                      !request.resource.data.keys().hasAny(['latitude'])
+                      || (
+                        request.resource.data.latitude is number
+                        && request.resource.data.latitude >= -90
+                        && request.resource.data.latitude <= 90
+                      )
+                    )
+                    && (
+                      !request.resource.data.keys().hasAny(['longitude'])
+                      || (
+                        request.resource.data.longitude is number
+                        && request.resource.data.longitude >= -180
+                        && request.resource.data.longitude <= 180
+                      )
+                    )
+                    && (
+                      !request.resource.data.keys().hasAny(['nearbyAlertsEnabled'])
+                      || request.resource.data.nearbyAlertsEnabled is bool
+                    )
+                    && (
+                      !request.resource.data.diff(resource.data)
+                        .affectedKeys().hasAny(['updatedAt'])
+                      || request.resource.data.updatedAt == request.time
+                    )
+                    && (
+                      !request.resource.data.diff(resource.data)
+                        .affectedKeys().hasAny(['consentUpdatedAt'])
+                      || request.resource.data.consentUpdatedAt == request.time
+                    );
+
+      // Location documents cannot be deleted directly by clients.
+      allow delete: if false;
+    }
+    // FCM device tokens
+    match /fcm_tokens/{userId} {
+      // Users cannot read FCM tokens from Firestore.
+      allow read: if false;
+
+      // Users can register or refresh only their own token.
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            && request.resource.data.keys().hasOnly([
+                               'uid',
+                               'token',
+                               'updatedAt'
+                            ])
+                            && request.resource.data.keys().hasAll([
+                               'uid',
+                               'token',
+                               'updatedAt'
+                            ])
+                            && request.resource.data.uid == userId
+                            && request.resource.data.token is string
+                            && request.resource.data.token.size() > 0
+                            && request.resource.data.token.size() <= 4096
+                            && request.resource.data.updatedAt == request.time;
+
+       allow delete: if false;
+     }
+
+    // Deny access to all other documents for now.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

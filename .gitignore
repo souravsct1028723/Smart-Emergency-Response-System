@@ -1,0 +1,43 @@
+
+# Flutter and Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+coverage/
+
+# IDE
+.idea/
+*.iml
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+
+# Firebase logs
+*.log
+firestore-debug.log
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Private credentials
+**/*service-account*.json
+*.pem
+*.p12
+
+# OS files
+.DS_Store
+Thumbs.db

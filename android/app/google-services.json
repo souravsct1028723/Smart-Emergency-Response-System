@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "551518726776",
+    "project_id": "guardian-alert-sers",
+    "storage_bucket": "guardian-alert-sers.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:551518726776:android:f669357332c8d9dbd15b8d",
+        "android_client_info": {
+          "package_name": "com.example.guardian_alert"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfZOMOl7rJven8mLLST3EYCX0eg0eqNMc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
